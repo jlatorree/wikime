@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" font-family="Helvetica, Arial, sans-serif">
+  <rect width="720" height="160" fill="#ffffff"/>
+  <g font-size="15" fill="#1b1b19">
+    <rect x="20" y="50" width="190" height="60" rx="10" fill="#f6f6f3" stroke="#d6d6cf"/>
+    <text x="115" y="85" text-anchor="middle">1. Cuenta</text>
+    <rect x="265" y="50" width="190" height="60" rx="10" fill="#f6f6f3" stroke="#d6d6cf"/>
+    <text x="360" y="85" text-anchor="middle">2. Primer proyecto</text>
+    <rect x="510" y="50" width="190" height="60" rx="10" fill="#eef3e3" stroke="#5b7a1f"/>
+    <text x="605" y="85" text-anchor="middle">3. Primer resultado</text>
+  </g>
+  <g stroke="#6f6f69" stroke-width="2" fill="none"><path d="M212 80h48M457 80h48"/></g>
+  <g fill="#6f6f69"><path d="M260 75l8 5-8 5zM505 75l8 5-8 5z"/></g>
+</svg>

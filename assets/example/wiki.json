@@ -1,0 +1,53 @@
+{
+  "name": "Proyecto Atlas",
+  "description": "Estado del rediseño del onboarding para el comité de producto.",
+  "lang": "es",
+  "updated": "2026-09-25",
+  "theme": {
+    "accent": "#5b7a1f"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Informe",
+        "groups": [
+          {
+            "group": "Empieza aquí",
+            "pages": [
+              "resumen",
+              "estado"
+            ]
+          },
+          {
+            "group": "Lo que decidimos",
+            "pages": [
+              "decisiones",
+              {
+                "group": "Detalle por decisión",
+                "pages": [
+                  "decision-onboarding-en-tres-pasos"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Anexos",
+        "groups": [
+          {
+            "group": "Evidencia",
+            "pages": [
+              "evidencia",
+              "glosario"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "glossary": {
+    "TTFV": "Tiempo hasta el primer valor: minutos desde que la persona se registra hasta que completa su primera tarea útil.",
+    "Prueba A/B": "Experimento en el que dos grupos ven versiones distintas y se comparan sus resultados."
+  }
+}
