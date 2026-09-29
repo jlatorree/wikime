@@ -53,11 +53,17 @@ wikime propone estas funciones cuando el contenido las justifica:
 | Función | Para qué |
 | --- | --- |
 | **Indicadores** | Una fila de cifras clave con su estado. |
-| **Gráficos** | Barras, barras horizontales o líneas desde una tabla o un CSV, con tooltip y tabla de datos. |
+| **Gráficos** | Barras, barras horizontales (también apiladas) o líneas desde una tabla o un CSV, con tooltip y tabla de datos. |
+| **Filtros en tablas** | Búsqueda y selectores por columna en las tablas largas, con contador. |
 | **Diagramas** | Imágenes con zoom y flujos en Mermaid. |
 | **Glosario** | Definiciones al pasar el cursor y una página de glosario que se arma sola. |
 | **Tablas de decisiones** | Decisiones vigentes y preguntas abiertas leídas de un proyecto brainify. |
 | **Versiones por audiencia** | Páginas o secciones solo para algunos, y un archivo por audiencia. |
+| **Versión con contraseña** | El informe cifrado tras una pantalla de acceso, para compartirlo por un canal abierto. |
+
+Lo propio de cada informe (una paleta, un subtítulo, el tema según la hora) va en
+`custom.css` y `custom.js` junto al contenido, sin tocar la plantilla. Y el build cuida al
+lector: se detiene ante tablas vacías y avisa si se cuelan rutas o nombres de notas internas.
 
 ## Requisitos
 
@@ -68,6 +74,7 @@ Opcional:
 
 - **[pdftotext](https://poppler.freedesktop.org)** (`brew install poppler`), para leer PDFs.
 - **[Graphify](https://github.com/Graphify-Labs/graphify)**, si el proyecto ya tiene grafo: wikime lo consulta para ubicar notas.
+- **[Node.js](https://nodejs.org)**, solo para la versión con contraseña.
 
 El HTML final solo usa internet para las tipografías (y para dibujar diagramas Mermaid).
 Sin conexión se ve con tipografías del sistema.
@@ -85,7 +92,8 @@ Luego **abre una sesión nueva**: el plugin recién instalado aparece como skill
 
 ```
 <nombre>/            el contenido, que editas y versionas
-├── wiki.json        nombre, navegación, glosario y audiencias
+├── wiki.json        nombre, navegación, glosario, audiencias y opciones
+├── custom.css/.js   opcional: ajustes propios de este informe
 └── pages/           una página markdown por pregunta del lector
 <nombre>-v1.html     el resultado
 <nombre>-v2.html     la versión siguiente, sin pisar la anterior
@@ -106,6 +114,8 @@ Luego **abre una sesión nueva**: el plugin recién instalado aparece como skill
 | `scripts/extract_text.py` | Texto de HTML, PDF, Word y PowerPoint. |
 | `scripts/brainify_tables.py` | Tablas de decisiones vigentes y preguntas abiertas de brainify. |
 | `scripts/build_wiki.py` | Valida el contenido y genera el HTML. Python 3, sin dependencias. |
+| `scripts/protect.mjs` | La versión con contraseña (Node.js). |
+| `CHANGELOG.md` | Qué cambió en cada versión. |
 | `assets/template.html` | La plantilla: diseño, búsqueda, gráficos, glosario y modo oscuro. |
 | `assets/example/` | Una muestra que usa cada componente, como referencia para Claude. |
 | `assets/vendor/` | marked (MIT) e íconos Lucide (ISC), para que el HTML funcione sin internet. |

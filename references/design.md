@@ -107,7 +107,7 @@ arriba y nota en sm `--muted` abajo. El estado va como `Badge`, con texto.
 | Zona | Ancho | Contenido |
 |---|---|---|
 | Barra lateral | 288 px, fija | Nombre del proyecto, selector de tema, búsqueda, grupos y páginas, fecha de actualización al pie |
-| Contenido | fluido, máx. 760 px | Etiqueta del grupo, título, botón "Copiar página", bajada, texto, fuentes, anterior/siguiente |
+| Contenido | fluido, máx. 760 px | Etiqueta del grupo, título, botón "Copiar página" (opcional), bajada, texto, fuentes, anterior/siguiente |
 | Índice | 232 px, fijo al hacer scroll | "En esta página" con las secciones `##` y `###` |
 | Pestañas | arriba del contenido | Solo si hay dos pestañas o más |
 
@@ -115,6 +115,8 @@ arriba y nota en sm `--muted` abajo. El estado va como `Badge`, con texto.
   un menú que se abre desde la cabecera.
 - **Marca:** solo el nombre del proyecto en texto (sans 18, 600). Sin logo, ícono ni emoji.
 - **Pie de la barra lateral:** solo "Actualizado el …", sin audiencia ni autor.
+- **Ajustes de un informe** (`custom.css`, `custom.js`): cambian tokens o detalles de ese
+  informe, no este sistema. Si un ajuste serviría a todos, va a la plantilla.
 
 ## 5. Íconos
 

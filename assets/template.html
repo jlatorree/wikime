@@ -231,6 +231,13 @@ kbd {
 .prose img { max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); display: block; background: #ffffff; cursor: zoom-in; }
 .prose a img { cursor: pointer; }
 .prose .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.tfilter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
+.tfilter input, .tfilter select { font: inherit; font-size: var(--fs-sm); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; height: 34px; min-width: 0; }
+.tfilter input { flex: 1 1 220px; }
+.tfilter select { flex: 0 1 auto; max-width: 240px; cursor: pointer; }
+.tfilter input:focus, .tfilter select:focus { outline: none; border-color: var(--line-strong); }
+.tfilter .tcount { font-size: var(--fs-sm); color: var(--muted); margin-left: auto; white-space: nowrap; }
+.tfilter .tclear { font: inherit; font-size: var(--fs-sm); color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; }
 .prose table { border-collapse: collapse; width: 100%; font-size: var(--fs-sm); line-height: 1.5; font-variant-numeric: tabular-nums; }
 .prose th, .prose td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .prose th { font-weight: 600; background: var(--sub); white-space: nowrap; }
@@ -333,12 +340,16 @@ a.card:hover { border-color: var(--accent); }
 .badge-gray { --c-bg: var(--info-bg); --c-line: var(--info-line); --c-ink: var(--info-ink); }
 
 /* ---------- Metrics ---------- */
-.metrics { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 14px; margin: 0 0 22px; }
-.metric { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; min-width: 0; container-type: inline-size; }
+/* Each card spans four shared rows (label, value, status, note) so values and badges line up
+   across cards even when only some of them carry a status or a note. The size container sits
+   on the group, not the card: containment on the card would switch its subgrid off. */
+.metrics { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 14px; margin: 0 0 22px; container-type: inline-size; }
+.metric { display: grid; grid-template-rows: subgrid; grid-row: span 4; row-gap: 0; align-content: start; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
 .prose .metric-label { font-size: var(--fs-sm); color: var(--muted); margin: 0; line-height: 1.4; }
-.prose .metric-value { font-size: clamp(var(--fs-lg), 17cqi, var(--fs-h2)); font-weight: 600; letter-spacing: -.01em; line-height: 1.15; margin: 0; font-variant-numeric: tabular-nums; color: var(--ink); }
+.prose .metric-value { font-size: clamp(var(--fs-lg), calc(13cqi / var(--cols, 3)), var(--fs-h2)); font-weight: 600; letter-spacing: -.01em; line-height: 1.15; margin: 6px 0 0; font-variant-numeric: tabular-nums; color: var(--ink); }
 .prose .metric-note { font-size: var(--fs-sm); color: var(--muted); margin: 0; line-height: 1.5; }
-.metric .badge { align-self: flex-start; }
+.metric .badge { justify-self: start; align-self: start; margin-top: 8px; }
+.metric-foot:not(:empty) { margin-top: 6px; }
 
 /* ---------- Charts ---------- */
 .chart { margin: 0 0 26px; position: relative; }
@@ -352,6 +363,7 @@ a.card:hover { border-color: var(--accent); }
 .chart-plot svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-plot text { font-family: var(--font-body); font-size: 13px; fill: var(--muted); font-variant-numeric: tabular-nums; }
 .chart-plot text.val { fill: var(--ink-2); font-weight: 500; }
+.chart-plot text.seg { fill: #ffffff; font-weight: 600; font-size: 12px; }
 .chart-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
 .prose .chart-caption { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
 .chart-toggle { border: 0; background: none; padding: 2px 0; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -474,13 +486,16 @@ a.card:hover { border-color: var(--accent); }
   .page-head { flex-direction: column; gap: 14px; }
   .copy-btn { margin-top: 0; }
   .card-group { grid-template-columns: minmax(0, 1fr); }
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); --cols: 2 !important; }
+  .tfilter select { flex: 1 1 45%; max-width: none; }
+  .tfilter .tcount { margin-left: 0; }
   .update { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .update-meta { position: static; }
 }
 @media (min-width: 901px) { .mobile-brand { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
+<!--__CUSTOM_HEAD__-->
 
 <aside class="sidebar" id="sidebar" aria-label="Navegación">
   <div class="brand-row">
@@ -568,10 +583,15 @@ a.card:hover { border-color: var(--accent); }
   var PAGES = WIKI.pages;
   var LANG = (WIKI.lang || "es").slice(0, 2);
   var T = {
-    es: { search: "Buscar…", toc: "En esta página", copy: "Copiar página", copied: "Página copiada como Markdown", copyFail: "No se pudo copiar. Selecciona el texto a mano.", prev: "Anterior", next: "Siguiente", sources: "Fuentes de esta página", updated: "Actualizado el", noResults: "Sin resultados para", hintNav: "↑↓ para moverte", hintGo: "↵ para abrir", nav: "Navegación", system: "Tema del sistema", light: "Tema claro", dark: "Tema oscuro", menu: "Abrir menú", searchBtn: "Buscar", showData: "Ver datos", hideData: "Ocultar datos", close: "Cerrar" },
-    en: { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Page copied as Markdown", copyFail: "Couldn't copy. Select the text manually.", prev: "Previous", next: "Next", sources: "Sources for this page", updated: "Updated", noResults: "No results for", hintNav: "↑↓ to navigate", hintGo: "↵ to open", nav: "Navigation", system: "System theme", light: "Light theme", dark: "Dark theme", menu: "Open menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close" }
+    es: { search: "Buscar…", toc: "En esta página", copy: "Copiar página", copied: "Página copiada como Markdown", copyFail: "No se pudo copiar. Selecciona el texto a mano.", prev: "Anterior", next: "Siguiente", sources: "Fuentes de esta página", updated: "Actualizado el", noResults: "Sin resultados para", hintNav: "↑↓ para moverte", hintGo: "↵ para abrir", nav: "Navegación", system: "Tema del sistema", light: "Tema claro", dark: "Tema oscuro", menu: "Abrir menú", searchBtn: "Buscar", showData: "Ver datos", hideData: "Ocultar datos", close: "Cerrar", tableSearch: "Buscar en la tabla", all: "todos", clear: "Limpiar", rows: "filas", of: "de" },
+    en: { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Page copied as Markdown", copyFail: "Couldn't copy. Select the text manually.", prev: "Previous", next: "Next", sources: "Sources for this page", updated: "Updated", noResults: "No results for", hintNav: "↑↓ to navigate", hintGo: "↵ to open", nav: "Navigation", system: "System theme", light: "Light theme", dark: "Dark theme", menu: "Open menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of" }
   }[LANG] || null;
-  if (!T) T = { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Copied", copyFail: "Couldn't copy.", prev: "Previous", next: "Next", sources: "Sources", updated: "Updated", noResults: "No results for", hintNav: "↑↓", hintGo: "↵", nav: "Navigation", system: "System", light: "Light", dark: "Dark", menu: "Menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close" };
+  if (!T) T = { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Copied", copyFail: "Couldn't copy.", prev: "Previous", next: "Next", sources: "Sources", updated: "Updated", noResults: "No results for", hintNav: "↑↓", hintGo: "↵", nav: "Navigation", system: "System", light: "Light", dark: "Dark", menu: "Menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of" };
+  // Report-level options (wiki.json "options") and project hooks (window.wikime, from custom.js).
+  var OPT = WIKI.options || {};
+  var HOOK = window.wikime || {};
+  if (HOOK.labels) Object.keys(HOOK.labels).forEach(function (k) { T[k] = HOOK.labels[k]; });
+  function hook(name) { if (typeof HOOK[name] !== "function") return; try { HOOK[name].apply(null, Array.prototype.slice.call(arguments, 1)); } catch (e) { if (window.console) console.warn("wikime " + name + ":", e); } }
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
@@ -777,8 +797,8 @@ a.card:hover { border-color: var(--accent); }
       var stc = { green: "green", blue: "blue", amber: "amber", yellow: "amber", red: "red", gray: "gray", grey: "gray" }[st] || "gray";
       var body = inner(n, store);
       return '<div class="metric"><p class="metric-label">' + esc(a.label || "") + '</p><p class="metric-value">' + esc(a.value || "") + "</p>" +
-        (a.statusText ? '<span class="badge badge-' + stc + '">' + esc(a.statusText) + "</span>" : "") +
-        (a.note ? '<p class="metric-note">' + esc(a.note) + "</p>" : "") + (body ? '<div class="metric-note">' + body + "</div>" : "") + "</div>";
+        (a.statusText ? '<span class="badge badge-' + stc + '">' + esc(a.statusText) + "</span>" : '<span class="metric-slot"></span>') +
+        '<div class="metric-foot">' + (a.note ? '<p class="metric-note">' + esc(a.note) + "</p>" : "") + (body ? '<div class="metric-note">' + body + "</div>" : "") + "</div></div>";
     }
     if (name === "Chart") {
       var raw = unmask(dedent(n.inner), store);
@@ -896,6 +916,30 @@ a.card:hover { border-color: var(--accent); }
     });
     return { W: W, H: H, svg: out.join(""), hits: hits };
   }
+  var stackSeq = 0;
+  function chartHbarStack(d, W) {
+    var n = d.cats.length, t = 22, rowH = t + 14, T0 = 4;
+    var tot = d.cats.map(function (c, i) { return d.series.reduce(function (a, s) { var v = s.values[i]; return a + (isFinite(v) && v > 0 ? v : 0); }, 0); });
+    var max = Math.max.apply(null, tot.concat([0])) || 1;
+    var maxLab = Math.max.apply(null, d.cats.map(function (c) { return String(c).length; }));
+    var L = Math.min(W * .4, maxLab * 7.2 + 14), R = Math.max.apply(null, tot.map(function (v) { return fmtVal(d, v).length; })) * 7.4 + 14;
+    var pw = Math.max(40, W - L - R), H = T0 + n * rowH + 4, id = "wk-stack-" + (++stackSeq), out = [], hits = [];
+    d.cats.forEach(function (c, i) {
+      var y = T0 + i * rowH + (rowH - t) / 2, x = L, full = tot[i] / max * pw, cid = id + "-" + i;
+      out.push('<clipPath id="' + cid + '"><rect x="' + L.toFixed(1) + '" y="' + y + '" width="' + full.toFixed(1) + '" height="' + t + '" rx="4"/></clipPath>');
+      out.push(txt(L - 10, y + t / 2 + 4.5, clip(c, L - 14), "end"));
+      d.series.forEach(function (s, j) {
+        var v = s.values[i]; if (!isFinite(v) || v <= 0) return;
+        var w = v / max * pw, lab = NF.format(v);
+        out.push('<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + Math.max(1, w).toFixed(1) + '" height="' + t + '" fill="var(--s' + (j + 1) + ')" clip-path="url(#' + cid + ')"/>');
+        if (w > lab.length * 7.2 + 10) out.push(txt(x + w / 2, y + t / 2 + 4.5, lab, "middle", "seg"));
+        x += w;
+      });
+      out.push(txt(L + full + 8, y + t / 2 + 4.5, fmtVal(d, tot[i]), "start", "val"));
+      hits.push({ x0: 0, x1: W, y0: T0 + i * rowH, y1: T0 + (i + 1) * rowH, i: i });
+    });
+    return { W: W, H: H, svg: out.join(""), hits: hits };
+  }
   function chartLine(d, W) {
     var e = extent(d), n = d.cats.length, nS = d.series.length, H = d.height || 280;
     var L = Math.max.apply(null, e.ticks.map(function (t) { return fmtVal(d, t).length; })) * 7.4 + 12;
@@ -933,7 +977,8 @@ a.card:hover { border-color: var(--accent); }
     var d; try { d = JSON.parse(fig.getAttribute("data-chart")); } catch (e) { return; }
     var plot = fig.querySelector(".chart-plot");
     var W = Math.max(260, Math.round(plot.clientWidth || 640));
-    var g = d.type === "hbar" ? chartHbar(d, W) : d.type === "line" ? chartLine(d, W) : chartBar(d, W);
+    var custom = HOOK.charts && typeof HOOK.charts[d.type] === "function" ? HOOK.charts[d.type] : null;
+    var g = custom ? custom(d, W) : d.type === "hbarstack" ? chartHbarStack(d, W) : d.type === "hbar" ? chartHbar(d, W) : d.type === "line" ? chartLine(d, W) : chartBar(d, W);
     plot.innerHTML = '<svg viewBox="0 0 ' + g.W + " " + g.H + '" width="' + g.W + '" height="' + g.H + '" aria-hidden="true">' + g.svg + "</svg>";
     var tip = fig.querySelector(".chart-tip");
     if (!tip) { tip = document.createElement("div"); tip.className = "chart-tip"; tip.hidden = true; fig.appendChild(tip); }
@@ -1003,7 +1048,57 @@ a.card:hover { border-color: var(--accent); }
     $("lightbox").hidden = false; $("lightbox-close").focus();
   }
   function closeLightbox() { if (!$("lightbox").hidden) { $("lightbox").hidden = true; $("lightbox-stage").innerHTML = ""; } }
-  function enhance(root) { renderDiagrams(root); applyGlossary(root); drawCharts(root); }
+  function enhance(root) { renderDiagrams(root); applyGlossary(root); drawCharts(root); if (OPT.tableFilters) tableFilters(root); }
+
+  /* ---------- Table filters (options.tableFilters) ---------- */
+  // Long tables get a text search and one select per column with few distinct values.
+  function tableFilters(root) {
+    var cfg = typeof OPT.tableFilters === "object" ? OPT.tableFilters : {};
+    var minRows = parseInt(cfg.minRows, 10) || 12, multi = {};
+    (cfg.multiValue || []).forEach(function (h) { multi[String(h).trim()] = 1; });
+    var parts = function (tx, h) { return (multi[h] ? tx.split(/,\s+/) : [tx]).map(function (v) { return v.trim(); }).filter(function (v) { return v && v !== "—"; }); };
+    Array.prototype.forEach.call(root.querySelectorAll(".table-wrap"), function (w) {
+      if (w.closest(".chart-data") || (w.previousElementSibling && w.previousElementSibling.classList.contains("tfilter"))) return;
+      var t = w.querySelector("table"); if (!t || !t.tHead || !t.tBodies[0]) return;
+      var rows = Array.prototype.slice.call(t.tBodies[0].rows);
+      if (rows.length < minRows) return;
+      if (rows.some(function (r) { return !r.cells[0] || !r.cells[0].textContent.trim(); })) return;
+      var heads = Array.prototype.map.call(t.tHead.rows[0].cells, function (c) { return c.textContent.trim(); });
+      var bar = document.createElement("div"); bar.className = "tfilter";
+      var q = document.createElement("input"); q.type = "search"; q.placeholder = T.tableSearch; q.setAttribute("aria-label", T.tableSearch);
+      bar.appendChild(q);
+      var sels = [];
+      heads.forEach(function (h, i) {
+        if (i === 0) return;
+        var vals = {}, long = 0;
+        rows.forEach(function (r) { var tx = r.cells[i] ? r.cells[i].textContent.trim() : ""; if (tx.length > 60) long++; parts(tx, h).forEach(function (v) { vals[v] = 1; }); });
+        var k = Object.keys(vals).sort(function (a, b) { return a.localeCompare(b, LANG); });
+        if (k.length < 2 || k.length > 16 || k.length === rows.length || long > rows.length / 3) return;
+        if (k.every(function (v) { return /^[\d.,%\s]+$/.test(v); })) return;
+        var s = document.createElement("select"); s.setAttribute("aria-label", h);
+        s.innerHTML = '<option value="">' + esc(h) + ": " + T.all + "</option>" + k.map(function (v) { return "<option>" + esc(v) + "</option>"; }).join("");
+        s._col = i; s._h = h; sels.push(s); bar.appendChild(s);
+      });
+      var clear = document.createElement("button"); clear.type = "button"; clear.className = "tclear"; clear.textContent = T.clear; clear.hidden = true;
+      var count = document.createElement("span"); count.className = "tcount";
+      bar.appendChild(clear); bar.appendChild(count);
+      var apply = function () {
+        var txt0 = q.value.trim().toLowerCase(), vis = 0;
+        rows.forEach(function (r) {
+          var ok = (!txt0 || r.textContent.toLowerCase().indexOf(txt0) >= 0) && sels.every(function (s) { return !s.value || (r.cells[s._col] && parts(r.cells[s._col].textContent, s._h).indexOf(s.value) >= 0); });
+          r.hidden = !ok; if (ok) vis++;
+        });
+        var active = txt0 || sels.some(function (s) { return s.value; });
+        clear.hidden = !active;
+        count.textContent = active ? vis + " " + T.of + " " + rows.length : rows.length + " " + T.rows;
+      };
+      q.addEventListener("input", apply);
+      sels.forEach(function (s) { s.addEventListener("change", apply); });
+      clear.addEventListener("click", function () { q.value = ""; sels.forEach(function (s) { s.value = ""; }); apply(); });
+      apply();
+      w.parentNode.insertBefore(bar, w);
+    });
+  }
 
   /* ---------- Sidebar + tabs ---------- */
   var activeSlug = null;
@@ -1116,11 +1211,12 @@ a.card:hover { border-color: var(--accent); }
         h.id = slug + "~" + id;
         var inTabs = h.closest(".tab-panel, .accordion, .card");
         if (!inTabs) {
-          h.innerHTML = '<a class="heading-anchor" href="#' + slug + "~" + id + '">' + h.innerHTML + "</a>";
+          if (OPT.headingLinks !== false) h.innerHTML = '<a class="heading-anchor" href="#' + slug + "~" + id + '">' + h.innerHTML + "</a>";
           headings.push({ el: h, text: h.textContent, depth: h.tagName === "H2" ? 2 : 3, id: slug + "~" + id });
         }
       });
       enhance(prose);
+      hook("onPage", prose, slug);
       $("toc-list").innerHTML = headings.map(function (h) {
         return '<li><a class="depth-' + h.depth + '" href="#' + h.id + '">' + esc(h.text) + "</a></li>";
       }).join("");
@@ -1242,7 +1338,11 @@ a.card:hover { border-color: var(--accent); }
   // Theme
   function applyTheme(v) {
     if (v === "light" || v === "dark") document.documentElement.setAttribute("data-theme", v);
-    else document.documentElement.removeAttribute("data-theme");
+    else {
+      var auto = typeof HOOK.systemTheme === "function" ? HOOK.systemTheme() : null;
+      if (auto === "light" || auto === "dark") document.documentElement.setAttribute("data-theme", auto);
+      else document.documentElement.removeAttribute("data-theme");
+    }
     Array.prototype.forEach.call(document.querySelectorAll("#theme-toggle button"), function (b) {
       b.setAttribute("aria-pressed", String(b.getAttribute("data-theme-value") === (v || "system")));
     });
@@ -1402,6 +1502,7 @@ a.card:hover { border-color: var(--accent); }
   $("search-input").placeholder = T.search;
   $("search-hint").innerHTML = "<span>" + T.hintNav + "</span><span>" + T.hintGo + "</span><span>Esc</span>";
   $("copy-label").textContent = T.copy;
+  if (OPT.copyButton === false) $("copy-btn").hidden = true;
   $("toc-label").textContent = T.toc;
   $("sidebar").setAttribute("aria-label", T.nav);
   $("theme-system").setAttribute("aria-label", T.system); $("theme-system").title = T.system;
@@ -1419,5 +1520,6 @@ a.card:hover { border-color: var(--accent); }
   document.documentElement.lang = LANG;
   renderTabs();
   route();
+  hook("onReady");
 })();
 </script>

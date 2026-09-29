@@ -30,7 +30,8 @@ informe".
 | `scripts/inventory.py` | Mapa de la carpeta: una línea por nota, otros archivos con su fecha, versiones de un mismo documento, y si hay brainify, grafo o informes previos. |
 | `scripts/extract_text.py` | Texto de HTML, PDF, Word y PowerPoint, incluido el que un HTML guarda dentro de sus scripts. |
 | `scripts/brainify_tables.py` | Tablas de decisiones vigentes y de preguntas abiertas de un proyecto brainify. |
-| `scripts/build_wiki.py` | Valida y genera el HTML; reduce imágenes, lee CSV y arma versiones por audiencia. |
+| `scripts/build_wiki.py` | Valida y genera el HTML; reduce imágenes, lee CSV, arma versiones por audiencia, incrusta `custom.css`/`custom.js` y protege con contraseña (`--protect`). |
+| `scripts/protect.mjs` | Cifra un informe tras una pantalla de contraseña (lo llama `build_wiki.py --protect`; necesita Node.js). |
 | `assets/example/` | Un informe pequeño y completo para copiar la forma. |
 
 ## Flujo
@@ -116,6 +117,12 @@ Cada página responde una **pregunta del lector**:
 - **Confidencial:** opiniones sobre personas, costos internos, tácticas de negociación o
   comentarios sobre la audiencia se consultan con el usuario; sin respuesta, quedan fuera
   y lo avisas.
+- **Nada interno para lectores de afuera:** ni rutas, ni nombres de notas o archivos. En
+  `sources`, URLs y páginas del informe; las notas van en la ficha del entregable. Si el
+  lector es ejecutivo, sigue "Informe ejecutivo" en `references/arquitectura.md`.
+- **Lo propio de este informe** (una paleta, un subtítulo, un comportamiento) va en
+  `custom.css` y `custom.js`, y los interruptores en `options` (`references/componentes.md`).
+  Nunca retoques el HTML generado con un script de buscar y reemplazar.
 
 **Listo cuando** cada página de la propuesta existe con su bajada y sus fuentes.
 
@@ -129,6 +136,9 @@ Con versiones por audiencia, genera una por cada una con `--audience <nombre>`.
 
 Si tienes un navegador, abre el HTML una vez y mira la portada y la página más densa.
 
+El build se detiene ante una tabla vacía o un marcador `{{...}}` sin reemplazar (señal de que
+un generador falló), y avisa de referencias internas que el lector no conoce.
+
 **Listo cuando** el build termina con 0 errores y 0 avisos, salvo avisos que decidiste
 aceptar y puedes explicar (por ejemplo, una página fuera de la navegación a propósito).
 
@@ -141,6 +151,11 @@ contradictorio. El HTML funciona solo: se manda por correo o se comparte desde u
 - **Artifact,** si el usuario quiere un link privado en claude.ai: genera con
   `--artifact "<scratchpad>/<slug>.html"` (la variante sin `<!doctype>` que pide el
   Artifact) y publica ese archivo.
+- **Con contraseña,** si el informe es confidencial: `--protect "<slug>-v1-protegido.html"`
+  (ver `references/componentes.md`). La contraseña la elige el usuario. Lo más seguro es que
+  corra él mismo el comando en su terminal, donde se le pide sin mostrarse; si te la da en
+  el chat, pásala solo como `WIKIME_PASSWORD=...` en ese comando, no la repitas en tus
+  respuestas ni la escribas en archivos. Comparte el protegido, nunca el original.
 - **brainify:** crea la ficha con `templates/deliverable-card.md` de brainify junto al
   HTML (`formato: informe html`, `generado_con: wikime`), enlazando las notas que lo
   sustentan, y corre `graphify update .` desde la raíz del proyecto.
@@ -149,7 +164,8 @@ contradictorio. El HTML funciona solo: se manda por correo o se comparte desde u
 
 1. Lee `wiki.json` y corre el inventario; lo modificado después de `updated` es lo nuevo.
 2. Edita las páginas afectadas, agrega las nuevas a la navegación y actualiza `updated`
-   en `wiki.json` y en cada página editada.
+   en `wiki.json` y en cada página editada. Las páginas que salen se mueven a `archivo/`
+   dentro de la carpeta del contenido; no se borran.
 3. Si hay página de novedades, agrega arriba un `<Update>` con lo que cambió.
 4. Genera con la versión siguiente (`-v2`, `-v3`) y conserva las anteriores. En brainify,
    suma una fila al historial de la ficha.

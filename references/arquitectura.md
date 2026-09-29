@@ -48,6 +48,29 @@ solo las que el usuario acepte. Guíate por el tipo y por lo que hay en las nota
 | **Glosario** | Hay siglas o términos internos que el lector no conoce (TTFV, NPS, "Fase 0"); casi siempre en corpus de investigación y wikis de equipo | La audiencia comparte el vocabulario |
 | **Versiones por audiencia** | Dos audiencias con necesidades distintas leen lo mismo (comité y equipo; cliente e interno), o hay material que una no debe ver | Una sola audiencia |
 | **Novedades** (`<Update>`) | El informe se va a actualizar y la gente vuelve a leerlo | Es una entrega única |
+| **Filtros en tablas** (`options.tableFilters`) | Hay tablas de 12 filas o más que el lector va a consultar (catálogo de fuentes, inventario, índice) | Las tablas son cortas o se leen de corrido |
+| **Barras apiladas** (`hbarstack`) | Un total se reparte en partes que importan (fuentes por tipo y por lectura, casos por estado) | Las partes no suman un total con sentido |
+| **Versión con contraseña** (`--protect`) | El informe es confidencial y se comparte por correo, drive o Artifact | Es interno y ya vive en un lugar con acceso controlado |
+
+## Informe ejecutivo: se presenta como trabajo final
+
+Cuando el lector es un C-level, un comité o quien aprueba, el informe muestra el trabajo
+terminado, no el proceso:
+
+- **En positivo y cerrado.** Nada de etiquetas de proceso ("mitigado", "por validar",
+  "declarar como riesgo", "pendiente de revisar"): lo que se sabe se dice como hecho, y lo
+  que falta, como próximo paso con responsable. Los riesgos se cuentan con cómo los recoge
+  el diseño.
+- **Nada interno.** Ni rutas, ni nombres de archivos o notas, ni columnas del tipo "dónde se
+  usa" con notas del proyecto. `sources` lleva URLs y páginas del informe; la trazabilidad
+  hacia las notas vive en la ficha del entregable. El build avisa si se cuela algo.
+- **Glosario solo técnico.** Términos de la disciplina que el lector puede no conocer; no
+  el vocabulario del propio proyecto ni palabras comunes.
+- **Método a la vista.** Si hay una página de metodología, dice cómo se armó el informe y
+  declara que se trabajó con ayuda de IA.
+- **Interfaz sobria.** Propón `options.copyButton: false` y `options.headingLinks: false`.
+- **Páginas retiradas, archivadas.** Lo que sale de una versión se mueve a `archivo/`
+  dentro de la carpeta del contenido (fuera de `pages/`), no se borra: puede volver.
 
 ## Patrón por defecto: informe para stakeholders
 
@@ -121,7 +144,8 @@ centrales del proyecto: empieza por ellas.
 
 - **Wiki de proyecto para el equipo** (onboarding de alguien nuevo): grupos "Empieza aquí"
   (qué es, quién es quién, glosario), "Cómo trabajamos", "Decisiones", "Referencias".
-  Aquí sí conviene más detalle y enlaces a las notas originales en `sources`.
+  Aquí sí conviene más detalle y enlaces a las notas originales en `sources`, con
+  `options.internalRefs: true`.
 - **Base de conocimiento o corpus de investigación:** empieza con una página de "Qué
   sabemos" (los hallazgos principales en una línea cada uno, con su nivel de evidencia).
   Luego un grupo por tema o pregunta de investigación, cada página un hallazgo con su

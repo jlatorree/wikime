@@ -7,6 +7,11 @@ Usage:
   python3 build_wiki.py <wiki_dir> --artifact FILE.html # also write the Artifact variant (no doctype)
   python3 build_wiki.py <wiki_dir> --check              # validate only, write nothing
   python3 build_wiki.py <wiki_dir> --audience comite    # version for one audience (see wiki.json "audiences")
+  python3 build_wiki.py <wiki_dir> --protect FILE.html  # also write a password-protected copy (needs Node.js;
+                                                        # password from WIKIME_PASSWORD or asked in the terminal)
+
+Project-specific look and behaviour go in custom.css / custom.js inside <wiki_dir> (or the
+paths in wiki.json "custom"); they are embedded after the template, never patched into it.
 
 Standard library only (Python 3.8+). Errors stop the build; warnings are printed
 and the build continues.
@@ -14,6 +19,7 @@ and the build continues.
 import argparse
 import base64
 import csv
+import getpass
 import io
 import shutil
 import subprocess
@@ -31,6 +37,9 @@ HERE = Path(__file__).resolve().parent
 TEMPLATE = HERE.parent / "assets" / "template.html"
 MARKED = HERE.parent / "assets" / "vendor" / "marked.umd.min.js"
 LUCIDE = HERE.parent / "assets" / "vendor" / "lucide-icon-nodes.json"
+PROTECT = HERE / "protect.mjs"
+CHART_TYPES = ("bar", "hbar", "hbarstack", "line")
+OPTIONS = {"tableFilters", "copyButton", "headingLinks", "internalRefs"}
 UI_ICONS = ["search", "monitor", "sun", "moon", "copy", "chevron-right", "menu", "text-align-start",
             "info", "lightbulb", "triangle-alert", "octagon-alert", "circle-check", "x", "table"]
 MERMAID_TAG = '<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>'
@@ -328,12 +337,12 @@ def _num(v):
         return None
 
 
-def check_charts(slug, body, warnings):
+def check_charts(slug, body, warnings, custom_js=""):
     for m in re.finditer(r"<Chart\b([^>]*)>(.*?)</Chart>", mask_code(body), re.S):
         attrs, inner = m.group(1), m.group(2)
         kind = (re.search(r'type=["\']([^"\']+)', attrs) or [None, "bar"])[1]
-        if kind not in ("bar", "hbar", "line"):
-            warnings.append(f"{slug}: <Chart type=\"{kind}\"> no existe; usa bar, hbar o line")
+        if kind not in CHART_TYPES and not re.search(r"[\"']?%s[\"']?\s*:" % re.escape(kind), custom_js):
+            warnings.append(f"{slug}: <Chart type=\"{kind}\"> no existe; usa {', '.join(CHART_TYPES)} o defínelo en custom.js (window.wikime.charts)")
         rows = [l for l in inner.splitlines() if l.strip().startswith("|") and not re.match(r"^\s*\|?\s*:?-{2,}", l)]
         if len(rows) < 2:
             warnings.append(f"{slug}: <Chart> necesita una tabla con encabezado y al menos una fila")
@@ -344,9 +353,50 @@ def check_charts(slug, body, warnings):
         bad = [c for r in cells[1:] for c in r[1:] if c and _num(c) is None]
         if bad:
             warnings.append(f"{slug}: <Chart> tiene valores que no son números: {', '.join(bad[:3])}")
+        if kind == "hbarstack" and any((_num(c) or 0) < 0 for r in cells[1:] for c in r[1:]):
+            warnings.append(f"{slug}: <Chart type=\"hbarstack\"> suma partes de un total; los valores negativos no se dibujan")
     for m in re.finditer(r"<Metric\b([^>]*)>", mask_code(body)):
         if "status=" in m.group(1) and "statusText=" not in m.group(1):
             warnings.append(f"{slug}: <Metric> con status sin statusText; el color solo no basta, agrega el texto del estado")
+
+
+def check_tables(slug, body, errors):
+    """A table with a header and no rows, or a {{marker}} left by a generator, stops the build."""
+    lines = mask_code(body).splitlines()
+    for i, line in enumerate(lines):
+        if i and re.match(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$", line) and lines[i - 1].strip().startswith("|"):
+            nxt = lines[i + 1].strip() if i + 1 < len(lines) else ""
+            if not nxt.startswith("|"):
+                errors.append(f"{slug}: tabla vacía (encabezado sin filas), cerca de: {lines[i - 1].strip()[:60]}")
+    for m in re.finditer(r"\{\{[^{}\n]{1,80}\}\}", mask_code(body)):
+        errors.append(f"{slug}: marcador sin reemplazar {m.group(0)}")
+
+
+INTERNAL = [
+    (r"(?:/Users/|/home/|~/|[A-Z]:\\)[^\s)\]`]+", "ruta del computador"),
+    (r"\.(?:brainme|brainify|obsidian)/[^\s)\]`]*|graphify-out[^\s)\]`]*", "carpeta interna"),
+    (r"\b0\d_[a-z_]+/[^\s)\]`]*", "carpeta del proyecto"),
+    (r"\b[\w\-]+\.(?:md|py|json|csv)\b", "archivo interno"),
+]
+
+
+def check_internal(slug, texts, sources, pages, warnings):
+    """The reader doesn't know the project's folders, files or notes: flag them."""
+    txt = "\n".join(texts)
+    txt = re.sub(r"(^|\n)(```|~~~)[^\n]*\n.*?\n\2[ \t]*(?=\n|$)", "\n", txt, flags=re.S)  # code blocks are examples
+    txt = re.sub(r"\]\([^)]*\)|\b(?:href|src)=\"[^\"]*\"|https?://\S+|data:\S+", " ", txt)  # link targets and URLs
+    found = {}
+    for rx, kind in INTERNAL:
+        for m in re.finditer(rx, txt):
+            found.setdefault(kind, []).append(m.group(0).rstrip(".,;:`'\"")[:50])
+    for src in sources:
+        w = re.match(r"^\[\[([^\]|#]+)", str(src).strip())
+        if w and w.group(1).strip() not in pages:
+            found.setdefault("notas en sources", []).append(w.group(1).strip())
+    if found:
+        what = "; ".join(f"{k}: {', '.join(dict.fromkeys(v))}" for k, v in found.items())
+        warnings.append(f"{slug}: referencias internas que el lector no conoce ({what}). Quítalas, "
+                        "o usa options.internalRefs: true si el informe es para el equipo")
 
 
 def heading_ids(body):
@@ -388,6 +438,7 @@ def main():
     ap.add_argument("--artifact")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--audience")
+    ap.add_argument("--protect", metavar="FILE.html", help="también escribe una copia protegida con contraseña")
     a = ap.parse_args()
 
     root = Path(a.wiki_dir).expanduser().resolve()
@@ -426,6 +477,22 @@ def main():
                 break
     if source_root and not src_root.is_dir():
         warnings.append(f"wiki.json: sourceRoot '{source_root}' no existe (la ruta es relativa a {root.name}/)")
+    options = cfg.get("options") or {}
+    if not isinstance(options, dict):
+        errors.append("wiki.json: 'options' debe ser un objeto")
+        options = {}
+    for k in options:
+        if k not in OPTIONS:
+            warnings.append(f"wiki.json: la opción '{k}' no existe ({', '.join(sorted(OPTIONS))})")
+    custom = cfg.get("custom") or {}
+    custom_files = {}
+    for kind, default in (("css", "custom.css"), ("js", "custom.js")):
+        rel = custom.get(kind) if isinstance(custom, dict) else None
+        path = root / (rel or default)
+        if path.is_file():
+            custom_files[kind] = path.read_text(encoding="utf-8")
+        elif rel:
+            errors.append(f"wiki.json: custom.{kind} '{rel}' no existe (la ruta es relativa a {root.name}/)")
     audiences = cfg.get("audiences") or {}
     aud = a.audience
     if aud and aud not in audiences:
@@ -433,6 +500,7 @@ def main():
     if audiences and not aud:
         warnings.append(f"hay audiencias definidas ({', '.join(audiences)}); esta es la versión completa. Genera cada una con --audience")
     excluded = set()
+    internal_check = []
     inliner = ImageInliner([root, pages_dir, root / "assets", src_root])
     pages, files = {}, {}
     for f in sorted(pages_dir.rglob("*.md")):
@@ -455,7 +523,8 @@ def main():
             continue
         body = apply_only(body, aud)
         body = inline_chart_csv(slug, body, [f.parent, root, src_root], errors)
-        check_charts(slug, body, warnings)
+        check_charts(slug, body, warnings, custom_files.get("js", ""))
+        check_tables(slug, body, errors)
         if not meta.get("title"):
             errors.append(f"{slug}: falta 'title' en el frontmatter")
         if not meta.get("description"):
@@ -473,6 +542,7 @@ def main():
         sources = meta.get("sources") or []
         if isinstance(sources, str):
             sources = [sources]
+        internal_check.append((slug, [str(meta.get("title") or ""), str(meta.get("description") or ""), body], sources))
         pages[slug] = {
             "title": meta.get("title") or slug,
             "description": meta.get("description") or "",
@@ -540,6 +610,10 @@ def main():
     if not referenced:
         errors.append("navigation: no hay ninguna página")
 
+    if options.get("internalRefs") is not True:
+        for slug, texts, sources in internal_check:
+            check_internal(slug, texts, sources, pages, warnings)
+
     # wikilinks / cards pointing nowhere
     for slug, p in pages.items():
         txt = mask_code(p["body"])
@@ -561,6 +635,7 @@ def main():
         "description": cfg.get("description", ""),
         "lang": cfg.get("lang", "es"),
         "glossary": glossary,
+        "options": {k: v for k, v in options.items() if k in OPTIONS},
         "updated": str(cfg.get("updated", "")),
         "navigation": {"tabs": tabs},
         "pages": pages,
@@ -590,6 +665,12 @@ def main():
         theme_css = (f":root {{ --accent: {light}; }}\n"
                      f"@media (prefers-color-scheme: dark) {{ :root:not([data-theme=\"light\"]) {{ --accent: {dark}; }} }}\n"
                      f":root[data-theme=\"dark\"] {{ --accent: {dark}; }}")
+    custom_head = ""
+    if custom_files.get("css"):
+        custom_head += "<style>\n/* custom.css del informe */\n" + custom_files["css"].replace("</style", "<\\/style") + "\n</style>\n"
+    if custom_files.get("js"):
+        custom_head += "<script>\n/* custom.js del informe */\n" + custom_files["js"].replace("</script", "<\\/script") + "\n</script>\n"
+    tpl = tpl.replace("<!--__CUSTOM_HEAD__-->", custom_head)
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
     out_html = (tpl.replace("__WIKI_TITLE__", html.escape(cfg.get("name", "Wiki")))
                    .replace("__WIKI_DESCRIPTION__", html.escape(cfg.get("description", ""), quote=True))
@@ -619,11 +700,41 @@ def main():
         print("  aviso: supera 16 MB, el límite de un Artifact; reduce o comprime imágenes")
     elif size > 8 * 1024 * 1024:
         print("  aviso: pesa más de 8 MB; considera comprimir imágenes")
-    if a.artifact:
+    if a.protect:
+        protect(a, out, data, theme)
+    elif a.artifact:
         art = Path(a.artifact).expanduser().resolve()
         art.parent.mkdir(parents=True, exist_ok=True)
         art.write_text(out_html, encoding="utf-8")
         print(f"  Artifact: {art}")
+
+
+def protect(a, out, data, theme):
+    """Encrypt the standalone HTML behind a password screen (scripts/protect.mjs, Node.js)."""
+    node = shutil.which("node")
+    if not node:
+        sys.exit("ERROR: --protect necesita Node.js (https://nodejs.org); el HTML sin proteger sí quedó escrito")
+    pw = os.environ.get("WIKIME_PASSWORD", "")
+    if not pw and sys.stdin.isatty():
+        pw = getpass.getpass("  Contraseña para el informe: ")
+        if pw != getpass.getpass("  Repítela: "):
+            sys.exit("ERROR: las contraseñas no coinciden")
+    if not pw:
+        sys.exit("ERROR: --protect necesita una contraseña: define WIKIME_PASSWORD o corre el comando en una terminal")
+    if len(pw) < 8:
+        print("  aviso: la contraseña tiene menos de 8 caracteres; con una más larga el informe es más difícil de abrir sin permiso")
+    env = dict(os.environ, WIKIME_PASSWORD=pw)
+    base = [node, str(PROTECT), str(out)]
+    extra = ["--title", data["name"] or "Informe", "--lang", data["lang"], "--accent", theme.get("accent") or "#5b7a1f"]
+    targets = [(Path(a.protect).expanduser().resolve(), [])]
+    if a.artifact:
+        targets.append((Path(a.artifact).expanduser().resolve(), ["--artifact"]))
+    for dest, flag in targets:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        r = subprocess.run(base + [str(dest)] + extra + flag, env=env, capture_output=True, text=True)
+        if r.returncode != 0:
+            sys.exit("ERROR: no se pudo proteger el informe: " + (r.stderr or r.stdout).strip())
+        print(r.stdout.rstrip() + ("  (Artifact)" if flag else ""))
 
 
 if __name__ == "__main__":

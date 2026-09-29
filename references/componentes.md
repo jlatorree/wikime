@@ -1,15 +1,20 @@
 # Formato: archivos, frontmatter y componentes
 
-Contenido: wiki.json · Frontmatter de cada página · Markdown · Componentes (avisos, pasos,
-pestañas, tarjetas, acordeones, cronología, imagen con marco, estado) · Funciones opcionales
-(indicadores, gráficos, diagramas, glosario, versiones por audiencia) · Lo que no está soportado.
+Contenido: wiki.json · Opciones del informe · Ajustes propios (custom.css y custom.js) ·
+Frontmatter de cada página · Markdown · Componentes (avisos, pasos, pestañas, tarjetas,
+acordeones, cronología, imagen con marco, estado) · Funciones opcionales (indicadores,
+gráficos, filtros en tablas, diagramas, glosario, versiones por audiencia, versión con
+contraseña) · Lo que no está soportado.
 
 El contenido vive en una carpeta con esta estructura (el HTML se genera al lado, como
 `<slug>-v1.html`):
 
 ```
 <slug>/
-├── wiki.json          navegación, nombre y tema
+├── wiki.json          navegación, nombre, tema y opciones
+├── custom.css         opcional: estilos propios de este informe
+├── custom.js          opcional: comportamiento propio de este informe
+├── archivo/           opcional: páginas retiradas (fuera de pages/, no se publican)
 └── pages/
     ├── resumen.md     una página = un archivo; el nombre es su enlace
     └── ...
@@ -58,10 +63,67 @@ a un sitio de Mintlify casi sin cambios si algún día hace falta.
 | `navigation` | `tabs` → `groups` → `pages`. Con una sola audiencia o uso, omite `tabs` y usa `"groups": [...]` directamente. |
 | `glossary` | Opcional. Términos y definiciones; ver "Glosario". |
 | `audiences` | Opcional. Audiencias para generar versiones distintas; ver "Versiones por audiencia". |
+| `options` | Opcional. Interruptores del informe; ver "Opciones del informe". |
+| `custom` | Opcional. `{"css": "...", "js": "..."}` si los ajustes propios no se llaman `custom.css` y `custom.js`. |
 
 Una entrada de `pages` es el nombre de un archivo sin `.md`, o un subgrupo
 `{ "group": "...", "pages": [...] }` que se despliega en la barra lateral (un solo nivel).
 La primera página de la navegación es la portada.
+
+## Opciones del informe
+
+En `wiki.json`, todas opcionales. Sin `options`, el informe se comporta como siempre.
+
+```json
+"options": {
+  "copyButton": false,
+  "headingLinks": false,
+  "tableFilters": { "minRows": 12, "multiValue": ["Sostiene"] },
+  "internalRefs": false
+}
+```
+
+| Opción | Por defecto | Qué hace |
+|---|---|---|
+| `copyButton` | `true` | `false` quita el botón "Copiar página". En informes para stakeholders sobra: el lector no reutiliza el markdown. |
+| `headingLinks` | `true` | `false` deja los títulos de sección como texto, sin enlace. El índice lateral sigue funcionando. |
+| `tableFilters` | apagado | Filtros en las tablas largas; ver "Filtros en tablas". `true` o `{ "minRows": 12, "multiValue": [...] }`. |
+| `internalRefs` | `false` | `true` permite referencias internas (rutas, archivos, notas en `sources`) sin aviso. Solo para wikis del equipo. |
+
+## Ajustes propios (custom.css y custom.js)
+
+Lo que es de un solo informe (una paleta, un subtítulo bajo el nombre, un comportamiento)
+va en `custom.css` y `custom.js` dentro de la carpeta del contenido. El build los incrusta
+después de la plantilla, así que ganan sobre ella sin `!important`. **Nunca retoques el HTML
+generado con buscar y reemplazar:** se rompe en silencio cuando la plantilla cambia.
+
+`custom.css` sobrescribe tokens o clases de la plantilla:
+
+```css
+body { --s1: #a9c4e6; --s2: #f0c2aa; }          /* paleta de los gráficos */
+.chart-plot text.seg { fill: #24303d; }          /* cifras dentro de las barras apiladas */
+```
+
+`custom.js` corre antes que la plantilla y le pasa ganchos en `window.wikime`:
+
+| Gancho | Qué recibe | Para qué |
+|---|---|---|
+| `labels` | objeto | Reemplaza textos de la interfaz (`system`, `copy`, `tableSearch`…). |
+| `systemTheme()` | — | Devuelve `"light"`, `"dark"` o nada: decide el tema cuando la persona elige "automático". |
+| `charts.<tipo>(d, W)` | datos y ancho | Un tipo de gráfico propio. Devuelve `{ W, H, svg, hits }`, como los de la plantilla. |
+| `onPage(prose, slug)` | el contenido de la página | Corre cada vez que se muestra una página. |
+| `onReady()` | — | Corre una vez, con la interfaz armada. |
+
+```js
+// Tema automático según la hora de quien lee: claro de 8:00 a 17:59
+(function () {
+  var porHora = function () { var h = new Date().getHours(); return h >= 8 && h < 18 ? "light" : "dark"; };
+  window.wikime = { systemTheme: porHora, labels: { system: "Tema según la hora" } };
+})();
+```
+
+Úsalos con moderación: el sistema de `references/design.md` sigue siendo la base, y un ajuste
+que sirve a todos los informes es una mejora de la plantilla, no de un informe.
 
 ## Frontmatter de cada página
 
@@ -80,8 +142,11 @@ mode: wide
 - `description`: la bajada bajo el título, en letra grande. Es la **respuesta** a la pregunta de la página.
 - `sidebarTitle`: versión corta para la barra lateral, si el título es largo.
 - `updated`: fecha propia de la página; si falta, se usa la de `wiki.json`.
-- `sources`: notas o URLs que respaldan la página. Se muestran plegadas al final
-  ("Fuentes de esta página"). Formatos: `[[nota]]`, `[[nota|texto]]`, `https://…`, `[texto](https://…)` o texto libre.
+- `sources`: lo que respalda la página. Se muestra plegado al final ("Fuentes de esta
+  página"). Formatos: `https://…`, `[texto](https://…)`, `[[pagina-del-informe]]` o texto libre.
+  En un informe para gente fuera del proyecto van solo URLs y páginas del informe: las notas
+  internas se enlazan en la ficha del entregable, no aquí. `[[nota]]` que no es una página
+  da aviso, salvo con `options.internalRefs: true` (wiki del equipo).
 - `mode: wide`: sin índice lateral y con más ancho, para portadas o tablas grandes.
 - `audiences`: lista de audiencias que ven la página (solo si `wiki.json` define `audiences`).
 
@@ -242,7 +307,7 @@ en una tabla markdown dentro del componente, o en un CSV:
 
 | Atributo | Valores |
 |---|---|
-| `type` | `bar` (columnas, para comparar pocas categorías o periodos), `hbar` (barras horizontales, para rankings o etiquetas largas), `line` (evolución en el tiempo) |
+| `type` | `bar` (columnas, para comparar pocas categorías o periodos), `hbar` (barras horizontales, para rankings o etiquetas largas), `hbarstack` (barras horizontales apiladas: cómo se reparte el total de cada fila), `line` (evolución en el tiempo) |
 | `title` | Qué muestra, en una frase. Obligatorio en la práctica. |
 | `unit` / `prefix` | Sufijo (`%`, `min`, `pacientes`) y prefijo (`S/`, `US$`) de los valores |
 | `caption` | Fuente, fecha o nota del dato |
@@ -254,6 +319,22 @@ en una tabla markdown dentro del componente, o en un CSV:
 - Cada gráfico trae leyenda (si hay 2 series o más), tooltip al pasar el mouse y el botón
   "Ver datos" con la tabla. No hace falta repetir la tabla aparte.
 - Una sola medida por gráfico: dos escalas distintas son dos gráficos.
+- En `hbarstack` cada fila suma sus series: cada tramo lleva su cifra si cabe y el total va al
+  final de la barra. Solo valores positivos (partes de un total).
+
+### Filtros en tablas
+
+Para informes con tablas largas (catálogos, índices de fuentes, inventarios). Con
+`options.tableFilters`, cada tabla con 12 filas o más (`minRows`) recibe arriba:
+
+- Una búsqueda por texto en toda la fila.
+- Un selector por cada columna con entre 2 y 16 valores distintos (tema, tipo, estado…).
+  Las columnas con textos largos, números o valores únicos no llevan selector.
+- Un contador ("12 de 281") y "Limpiar".
+
+Si una columna trae varios valores separados por coma ("Plan de Cuidado, Aliados"), nómbrala
+en `multiValue` para que el selector los ofrezca por separado. Las tablas de "Ver datos" de
+los gráficos y las tablas cuya primera columna tiene celdas vacías no llevan filtros.
 
 ### Diagramas
 
@@ -311,10 +392,29 @@ Un mismo contenido, dos o más recortes (por ejemplo, comité y equipo):
   Sin `--audience` sale la versión completa, con un aviso.
 - Los grupos y pestañas que quedan vacíos desaparecen de la navegación.
 
+### Versión con contraseña
+
+Para compartir un informe confidencial por un canal abierto (correo, drive, Artifact):
+
+```bash
+python3 "<skill>/scripts/build_wiki.py" <carpeta> --out <slug>-v1.html --protect <slug>-v1-protegido.html
+```
+
+- Todo el HTML se cifra (AES-GCM con una clave derivada de la contraseña, PBKDF2-SHA256) y
+  se abre tras una pantalla de acceso con el nombre del informe. Sin la contraseña no se lee,
+  ni siquiera en el código de la página.
+- La contraseña se pide en la terminal, o se toma de la variable `WIKIME_PASSWORD`. Nunca
+  va como argumento ni se guarda en un archivo.
+- Con `--artifact` además, el Artifact que se escribe es el protegido.
+- Necesita Node.js. El HTML sin proteger (`--out`) sigue siendo el original de trabajo:
+  no lo compartas si la idea era protegerlo.
+- Si se olvida la contraseña, no hay forma de recuperarla: se vuelve a generar con otra.
+
 ## Lo que no está soportado
 
 - Otros componentes de Mintlify (`CodeGroup`, `ResponseField`, `ParamField`, `Expandable`, `Tooltip`…): el build
   los marca como desconocidos y se verían como HTML crudo.
 - JSX con expresiones, `import` y `export` de MDX.
-- HTML propio con estilos: rompe la consistencia visual y el modo oscuro.
+- HTML propio con estilos dentro de las páginas: rompe la consistencia visual y el modo
+  oscuro. Lo propio de un informe va en `custom.css`.
 - Videos incrustados, formularios y archivos descargables: pon un enlace al original (Drive, YouTube…).

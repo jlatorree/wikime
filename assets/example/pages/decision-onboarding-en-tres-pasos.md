@@ -1,7 +1,7 @@
 ---
 title: Onboarding en tres pasos
 description: Pasamos de cinco a tres pasos porque el paso 2 concentraba el 60% del abandono.
-sources: ["[[nota-interna-que-no-es-pagina]]"]
+sources: ["[[evidencia]]", "https://example.com/informe-piloto"]
 ---
 
 ## Cómo queda el flujo
