@@ -50,7 +50,8 @@ Neutros cálidos casi sin tinte, un acento y colores semánticos solo para los e
 | `--ink` | #1b1b19 | #ecece8 | Texto principal, marcador activo |
 | `--ink-2` | #3d3d39 | #cfcfca | Bajada, texto secundario |
 | `--muted` | #6f6f69 | #9c9c95 | Etiquetas, índice, texto de tarjetas |
-| `--accent` | #5b7a1f | #a7c865 | Subrayado de enlaces e íconos de tarjetas. Nada más. |
+| `--accent` | #5b7a1f | #a7c865 | Líneas y formas: subrayado de enlaces, íconos de tarjetas, foco. |
+| `--accent-text` | acento + 40% negro | acento + 20% blanco | Texto en color de acento (números de pasos). Contraste de 7:1 o más, también con un acento propio. |
 
 - El **acento** es la única señal de marca y vive solo en subrayados de enlaces e íconos de
   tarjetas. Se cambia por proyecto con `theme.accent` en `wiki.json`.
@@ -101,6 +102,9 @@ arriba y nota en sm `--muted` abajo. El estado va como `Badge`, con texto.
 - Sombra: solo en elementos que flotan (búsqueda, menú móvil, tooltips). El resto usa bordes de 1 px.
 - Imágenes: fondo blanco siempre (casi todos los diagramas se dibujan para fondo claro), borde
   de 1 px y radio de 12 px. Se abren en grande al hacer clic.
+- Márgenes laterales: un solo token, `--gutter` (de 16 a 64 px), para la cabecera y el contenido.
+- Listas con viñeta colgada: el texto de cada ítem se alinea con el párrafo y la viñeta queda en
+  el margen. Las listas anidadas, o dentro de avisos, tarjetas y tablas, sí llevan sangría.
 
 ## 4. Estructura de la pantalla
 
@@ -115,6 +119,9 @@ arriba y nota en sm `--muted` abajo. El estado va como `Badge`, con texto.
   un menú que se abre desde la cabecera.
 - **Marca:** solo el nombre del proyecto en texto (sans 18, 600). Sin logo, ícono ni emoji.
 - **Pie de la barra lateral:** solo "Actualizado el …", sin audiencia ni autor.
+- **Enlace "Saltar al contenido":** primera parada del teclado; aparece solo con foco.
+- **Metadatos para compartir:** `og:title`, `og:description`, `twitter:card` y un favicon con la
+  inicial del proyecto sobre el acento, que el build genera solo.
 - **Ajustes de un informe** (`custom.css`, `custom.js`): cambian tokens o detalles de ese
   informe, no este sistema. Si un ajuste serviría a todos, va a la plantilla.
 
@@ -150,6 +157,37 @@ de la interfaz. Todo ícono del informe sale de ahí.
 | Enfoque, dirección | `compass` | Capas, niveles | `layers` |
 | Comparación | `scale` | Enlace externo | `link` |
 
+## 5b. Tacto y movimiento
+
+**En el celular**
+
+- Controles de 44 px como mínimo en el menú lateral y con puntero grueso: enlaces del índice,
+  botones del selector de tema (con 8 px entre ellos) y botón de menú.
+- `:hover` solo con `(hover: hover) and (pointer: fine)`, porque en pantallas táctiles el estado
+  queda pegado después del toque. Los controles responden con su propio `:active`.
+- Sin destello azul al tocar (`-webkit-tap-highlight-color: transparent`), `touch-action:
+  manipulation` en botones y enlaces, y `user-select: none` solo en controles, nunca en el texto.
+- La barra del navegador toma el color del fondo (`theme-color`) y cambia con el tema; el tema
+  guardado se aplica antes de pintar, sin destello del claro.
+- La barra lateral contiene su propio scroll (`overscroll-behavior: contain`).
+
+**Movimiento**
+
+| Elemento | Movimiento | Duración y curva |
+|---|---|---|
+| Menú lateral | Se desliza; cerrado queda con `visibility: hidden` (fuera del teclado y de los lectores de pantalla) | Abre en 280 ms, cierra en 200 ms, `cubic-bezier(0.32, 0.72, 0, 1)` |
+| Fondo del menú | Fundido de opacidad | 200 ms al abrir, 150 ms al cerrar |
+| Botón de menú y de tema | `scale(0.97)` al presionar | 160 ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Cambio de tema | Una sola transición de color para toda la página (clase `theme-anim` por 260 ms) | 200 ms, `ease` |
+| Ir a una sección | Desplazamiento con margen: alto de la cabecera + 16 px si queda fija, 24 px si no | Suave dentro de la misma página |
+
+- Al abrir el menú, el foco va al enlace de la página actual; con Esc se cierra y el foco vuelve
+  al botón de menú.
+- El índice marca como activa la última sección que pasó una línea a `min(140 px, 30%)` del
+  alto de la pantalla, y la última al llegar al final.
+- **Reducir movimiento** quita los desplazamientos (el menú aparece con un fundido, sin escala
+  al presionar, saltos sin animación) y mantiene los fundidos.
+
 ## 6. Componentes: cuándo usar cada uno
 
 | Componente | Úsalo para | No lo uses para | Límite por página |
@@ -158,7 +196,7 @@ de la interfaz. Todo ícono del informe sale de ahí.
 | `<Note>` / `<Info>` | Contexto que cambia cómo se lee lo que sigue | Repetir lo que dice el texto | 2 |
 | `<Tip>` | Una recomendación práctica | Mensajes decorativos | 1 |
 | `<Check>` / `<Danger>` | Algo confirmado / un bloqueo | Estados de avance (usa `Badge`) | 1 |
-| `<Steps>` | Una secuencia real, con orden | Listas sin orden | — |
+| `<Steps>` | Una secuencia real, con orden; o una lista numerada de temas, si el usuario lo prefiere | Listas cortas sin orden | — |
 | `<Tabs>` | La misma pregunta respondida para 2 a 4 casos paralelos | Temas distintos | — |
 | `<CardGroup>` | Llevar a otras páginas, o 2 a 4 piezas paralelas con título | Párrafos largos | 1 o 2 grupos |
 | `<AccordionGroup>` | Detalle o preguntas que la mayoría no necesita | Lo importante | — |
@@ -177,7 +215,10 @@ buena es casi toda texto, con uno o dos componentes donde ayudan de verdad.
 
 El nombre del proyecto y el vocabulario ("informe", no "wiki") los define `SKILL.md` (introducción y paso 1).
 
-- **Títulos** en las palabras del lector, con mayúscula solo al inicio.
+- **Títulos** en las palabras del lector, con mayúscula solo al inicio, y sin saltos de nivel:
+  de `##` a `###`, nunca de `##` a `####` (el build lo avisa).
+- **Oraciones cortas,** de unas 15 a 20 palabras en promedio; una idea por oración.
+- **Negrita con moderación:** la idea clave de un párrafo, no frases enteras ni varias por párrafo.
 - **Bajadas** de una o dos frases que respondan la pregunta de la página.
 - **Fechas** en formato largo ("25 de septiembre de 2026"). La interfaz las formatea sola a
   partir de `AAAA-MM-DD`.

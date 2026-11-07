@@ -1,5 +1,37 @@
 # Cambios
 
+## 1.2.0 · 2026-11-07
+
+Ajustes de tacto, movimiento y accesibilidad que salieron de auditar un informe real con
+skills de diseño (Emil Kowalski, taste-skill y diagram-design). Los informes de la 1.1.0 se
+generan igual; solo cambia la plantilla.
+
+**Celular y tacto**
+- Sin destello al tocar, `touch-action: manipulation`, `user-select: none` solo en controles
+  y un `:active` propio en cada control.
+- `:hover` solo con puntero fino, para que no quede pegado en pantallas táctiles.
+- `theme-color` y `color-scheme`: la barra del navegador sigue al tema, y el tema guardado se
+  aplica antes de pintar.
+- Controles de 44 px en el menú lateral y con puntero grueso; la barra lateral contiene su scroll.
+
+**Menú lateral y movimiento**
+- El menú entra en 280 ms y sale en 200 ms con curva de cajón; el fondo se funde. Cerrado queda
+  fuera del teclado y de los lectores de pantalla. Al abrir, el foco va a la página actual; con
+  Esc vuelve al botón de menú.
+- Escala de 0,97 al presionar el botón de menú y el selector de tema.
+- Cambio de tema con una sola transición de color para toda la página.
+- Reducir movimiento quita los desplazamientos y conserva los fundidos.
+- Ir a una sección deja un margen calculado según la cabecera; el índice usa una línea de corte
+  a `min(140 px, 30%)` del alto de la pantalla.
+
+**Accesibilidad y estructura**
+- Enlace "Saltar al contenido".
+- Token `--accent-text` con contraste de 7:1 o más para texto en color de acento.
+- Metadatos para compartir (`og:*`, `twitter:card`) y favicon con la inicial del proyecto.
+- Viñetas colgadas, `text-wrap: balance` en etiquetas cortas, márgenes con un solo `--gutter`.
+- Pasos con círculo de 2rem sobre acento suave.
+- El build avisa cuando un título salta de nivel (de `##` a `####`).
+
 ## 1.1.0 · 2026-09-29
 
 Mejoras que nacieron en un informe real (un catálogo de fuentes para un comité ejecutivo) y

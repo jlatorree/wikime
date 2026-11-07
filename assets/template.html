@@ -1,5 +1,12 @@
 <title>__WIKI_TITLE__</title>
 <meta name="description" content="__WIKI_DESCRIPTION__">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" id="meta-theme-color">
+<meta property="og:type" content="website">
+<meta property="og:title" content="__WIKI_TITLE__">
+<meta property="og:description" content="__WIKI_DESCRIPTION__">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="__FAVICON__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
@@ -18,6 +25,7 @@
   --accent: #5b7a1f;
   --accent-ink: #ffffff;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  --accent-text: color-mix(in srgb, var(--accent) 60%, #000000); /* accent for text: 7:1 or more on --bg */
   --note-bg: #eef4fb; --note-line: #c9dcf2; --note-ink: #1d4f86;
   --tip-bg: #eef5ea; --tip-line: #cfe3c4; --tip-ink: #2f6a1d;
   --info-bg: #f3f3f0; --info-line: #dfdfd8; --info-ink: #4a4a45;
@@ -35,6 +43,9 @@
   --fs-h2: 28px;
   --fs-h1: 44px;
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+  --gutter: clamp(16px, 4vw, 64px);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --sidebar-w: 288px;
   --toc-w: 232px;
   color-scheme: light;
@@ -45,6 +56,7 @@
     --line: #2a2a27; --line-strong: #3a3a36;
     --ink: #ecece8; --ink-2: #cfcfca; --muted: #9c9c95; --faint: #6f6f69;
     --accent: #a7c865; --accent-ink: #131312;
+    --accent-text: color-mix(in srgb, var(--accent) 80%, #ffffff);
     --note-bg: #152131; --note-line: #243a55; --note-ink: #9cc3ef;
     --tip-bg: #17221a; --tip-line: #28402c; --tip-ink: #a3d49a;
     --info-bg: #1d1d1b; --info-line: #30302c; --info-ink: #c4c4be;
@@ -61,6 +73,7 @@
   --line: #2a2a27; --line-strong: #3a3a36;
   --ink: #ecece8; --ink-2: #cfcfca; --muted: #9c9c95; --faint: #6f6f69;
   --accent: #a7c865; --accent-ink: #131312;
+  --accent-text: color-mix(in srgb, var(--accent) 80%, #ffffff);
   --note-bg: #152131; --note-line: #243a55; --note-ink: #9cc3ef;
   --tip-bg: #17221a; --tip-line: #28402c; --tip-ink: #a3d49a;
   --info-bg: #1d1d1b; --info-line: #30302c; --info-ink: #c4c4be;
@@ -75,7 +88,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 88px; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; scroll-padding-top: 88px; }
 body {
   margin: 0;
   background: var(--bg);
@@ -87,6 +100,19 @@ body {
 }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
+button, a { touch-action: manipulation; }
+.theme-toggle button, .icon-btn, .brand, .nav-link, .nav-sub, .toc a, .tabs-nav a, .search-trigger, .copy-btn, .chart-toggle, .pager a, .skip-link { -webkit-user-select: none; user-select: none; }
+.skip-link {
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 16px; z-index: 100;
+  padding: 8px 14px; border-radius: 10px; background: var(--ink); color: var(--bg);
+  font-size: var(--fs-sm); font-weight: 500; text-decoration: none;
+  transform: translateY(-160%); transition: transform 160ms var(--ease-out-strong);
+}
+.skip-link:focus { transform: none; }
+/* One theme switch, one transition: added to <html> for 260 ms by the theme toggle. */
+html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, fill 200ms ease, stroke 200ms ease !important;
+}
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -97,7 +123,7 @@ button { font: inherit; color: inherit; }
   padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
   border-right: 1px solid var(--line);
   background: var(--panel);
-  overflow-y: auto;
+  overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; gap: 20px;
   z-index: 30;
 }
@@ -110,6 +136,8 @@ button { font: inherit; color: inherit; }
   display: grid; place-items: center; color: var(--faint); cursor: pointer;
 }
 .theme-toggle button[aria-pressed="true"] { background: var(--sub-2); color: var(--ink); }
+.theme-toggle button, .icon-btn { transition: transform 160ms var(--ease-out-strong); }
+.theme-toggle button:active, .icon-btn:active { transform: scale(0.97); }
 .theme-toggle svg { width: 14px; height: 14px; display: block; }
 .i { display: inline-grid; place-items: center; flex: none; }
 .i svg { display: block; }
@@ -120,7 +148,6 @@ button { font: inherit; color: inherit; }
   background: var(--panel); color: var(--muted); cursor: pointer; text-align: left;
   font-size: var(--fs-base); transition: border-color .15s;
 }
-.search-trigger:hover { border-color: var(--line-strong); }
 .search-trigger svg { width: 16px; height: 16px; flex: none; }
 .search-trigger #search-label { flex: 1; }
 kbd {
@@ -129,7 +156,7 @@ kbd {
 }
 
 .nav { display: flex; flex-direction: column; gap: 26px; }
-.nav-group-title { font-weight: 600; font-size: var(--fs-base); letter-spacing: -.01em; margin: 0 0 8px; color: var(--ink); line-height: 1.3; }
+.nav-group-title { font-weight: 600; font-size: var(--fs-base); letter-spacing: -.01em; margin: 0 0 8px; color: var(--ink); line-height: 1.3; text-wrap: balance; }
 .nav-list { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
 .nav-list .nav-list { margin-left: 12px; }
 .nav-link, .nav-sub {
@@ -138,7 +165,6 @@ kbd {
   border: 0; border-left: 2px solid transparent; background: none;
   font-size: var(--fs-base); line-height: 1.4; color: var(--ink-2); text-decoration: none; text-align: left; cursor: pointer;
 }
-.nav-link:hover, .nav-sub:hover { color: var(--ink); border-left-color: var(--line-strong); }
 .nav-link[aria-current="page"] { color: var(--ink); font-weight: 600; border-left-color: var(--ink); }
 .nav-sub svg { width: 14px; height: 14px; color: var(--faint); transition: transform .15s; flex: none; }
 .nav-sub[aria-expanded="true"] svg { transform: rotate(90deg); }
@@ -149,7 +175,7 @@ kbd {
 .topbar {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
   background: var(--bg); border-bottom: 1px solid var(--line);
-  padding-inline: clamp(16px, 4vw, 64px);
+  padding-inline: var(--gutter);
 }
 .topbar[data-empty="true"] { border-bottom: 0; background: transparent; position: static; }
 .topbar-inner { display: flex; align-items: center; gap: 12px; min-height: 0; }
@@ -165,14 +191,13 @@ kbd {
   display: block; padding: 17px 0 15px; border-bottom: 2px solid transparent;
   text-decoration: none; color: var(--muted); font-weight: 500; font-size: var(--fs-base); white-space: nowrap;
 }
-.tabs-nav a:hover { color: var(--ink); }
 .tabs-nav a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 
 .content-wrap {
   flex: 1;
   display: grid; grid-template-columns: minmax(0, 1fr) var(--toc-w);
   gap: clamp(32px, 5vw, 80px);
-  padding: 56px clamp(16px, 4vw, 64px) 96px;
+  padding: 56px var(--gutter) 96px;
   max-width: 1200px; width: 100%; margin: 0 auto;
 }
 .content-wrap[data-mode="wide"] { grid-template-columns: minmax(0, 1fr); max-width: 980px; }
@@ -180,7 +205,7 @@ kbd {
 .page { min-width: 0; max-width: 760px; width: 100%; margin: 0 auto; }
 .content-wrap[data-mode="wide"] .page { max-width: 900px; }
 
-.page-eyebrow { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); margin: 0 0 8px; }
+.page-eyebrow { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); margin: 0 0 8px; text-wrap: balance; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .page-title {
   font-family: var(--font-display); font-weight: 400; font-size: clamp(34px, 5vw, var(--fs-h1));
@@ -192,7 +217,6 @@ kbd {
   padding: 7px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
   font-size: var(--fs-sm); color: var(--ink-2); cursor: pointer; white-space: nowrap;
 }
-.copy-btn:hover { border-color: var(--line-strong); color: var(--ink); }
 .copy-btn svg { width: 15px; height: 15px; }
 .page-lead { font-size: var(--fs-base); line-height: 1.7; color: var(--ink-2); margin: 20px 0 0; text-wrap: pretty; }
 
@@ -208,12 +232,12 @@ kbd {
 .prose h4 { font-size: var(--fs-base); font-weight: 600; margin: 28px 0 8px; }
 .prose h2, .prose h3, .prose h4 { scroll-margin-top: 88px; }
 .prose .heading-anchor { color: inherit; text-decoration: none; }
-.prose .heading-anchor:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 6px; }
 .prose a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
-.prose a:hover { text-decoration-thickness: 2.5px; }
 .prose strong { font-weight: 600; color: var(--ink); }
-.prose ul, .prose ol { padding-left: 1.4em; }
-.prose li { margin: 6px 0; padding-left: 4px; }
+/* Hanging markers: item text lines up with the paragraph and the bullet sits in the margin. */
+.prose ul, .prose ol { padding-left: 0; list-style-position: outside; }
+.prose li { margin: 6px 0; padding-left: 0; }
+.prose li > ul, .prose li > ol, .prose .callout ul, .prose .callout ol, .prose .card ul, .prose .card ol, .prose .tab-panel ul, .prose .tab-panel ol, .prose .accordion-body ul, .prose .accordion-body ol, .prose td ul, .prose td ol { padding-left: 1.3em; }
 .prose li::marker { color: var(--faint); }
 .prose li > ul, .prose li > ol { margin: 6px 0 0; }
 .prose li input[type="checkbox"] { margin: 0 8px 0 -2px; accent-color: var(--accent); }
@@ -262,11 +286,11 @@ kbd {
 .callout-check { --c-bg: var(--check-bg); --c-line: var(--check-line); --c-ink: var(--check-ink); }
 
 .steps { list-style: none; padding: 0; margin: 8px 0 22px; }
-.step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 16px; position: relative; padding-bottom: 22px; margin: 0; }
-.step:not(:last-child)::before { content: ""; position: absolute; left: 13.5px; top: 34px; bottom: 4px; width: 1px; background: var(--line); }
+.step { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 16px; position: relative; padding-bottom: 22px; margin: 0; }
+.step:not(:last-child)::before { content: ""; position: absolute; left: calc(1rem - 0.5px); top: calc(2rem + 6px); bottom: 4px; width: 1px; background: var(--line); }
 .step-num {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--sub-2); color: var(--ink);
-  display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px;
+  width: 2rem; height: 2rem; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text);
+  display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .prose .step-title { font-weight: 600; margin: 1px 0 6px; line-height: 1.5; }
 .step-body > :last-child { margin-bottom: 0; }
@@ -288,7 +312,6 @@ kbd {
   transition: border-color .15s, transform .15s;
 }
 .prose a.card { text-decoration: none; }
-a.card:hover { border-color: var(--accent); }
 .card-icon { width: 20px; height: 20px; color: var(--accent); margin-bottom: 8px; }
 .card-icon svg { width: 20px; height: 20px; display: block; }
 .prose .card-title { font-weight: 600; line-height: 1.4; margin: 0; }
@@ -367,7 +390,6 @@ a.card:hover { border-color: var(--accent); }
 .chart-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
 .prose .chart-caption { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
 .chart-toggle { border: 0; background: none; padding: 2px 0; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.chart-toggle:hover { color: var(--ink); }
 .chart-toggle svg { width: 14px; height: 14px; }
 .chart-data { margin-top: 10px; }
 .chart-tip {
@@ -386,7 +408,7 @@ a.card:hover { border-color: var(--accent); }
 .diagram pre.mermaid { background: none; border: 0; margin: 0; padding: 0; text-align: center; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--muted); white-space: pre-wrap; }
 .diagram svg { max-width: 100%; height: auto; }
 .term { border-bottom: 1px dotted var(--muted); cursor: help; position: relative; }
-.term:hover::after, .term:focus::after {
+.term:focus::after {
   content: attr(data-def); position: absolute; left: 0; top: calc(100% + 6px); z-index: 10;
   width: max-content; max-width: min(300px, 80vw); white-space: normal;
   background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
@@ -419,7 +441,6 @@ a.card:hover { border-color: var(--accent); }
   display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid var(--line);
   border-radius: 14px; text-decoration: none; min-width: 0;
 }
-.pager a:hover { border-color: var(--line-strong); }
 .pager .next { text-align: right; grid-column: 2; }
 .pager small { font-size: var(--fs-sm); color: var(--muted); }
 .pager span { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -433,7 +454,6 @@ a.card:hover { border-color: var(--accent); }
   display: block; padding: 5px 0 5px 16px; margin-left: -1px; border-left: 2px solid transparent;
   text-decoration: none; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45;
 }
-.toc a:hover { color: var(--ink); }
 .toc a.depth-3 { padding-left: 30px; }
 .toc a.active { color: var(--ink); font-weight: 600; border-left-color: var(--ink); }
 
@@ -460,7 +480,11 @@ a.card:hover { border-color: var(--accent); }
 .search-empty { padding: 20px 14px; color: var(--muted); font-size: var(--fs-sm); }
 .search-hint { display: flex; gap: 14px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--faint); }
 
-.scrim { position: fixed; inset: 0; background: rgba(15, 15, 12, .38); z-index: 25; }
+.scrim {
+  position: fixed; inset: 0; background: rgba(15, 15, 12, .38); z-index: 25;
+  opacity: 0; visibility: hidden; transition: opacity 150ms ease, visibility 0s linear 150ms;
+}
+.scrim[data-open="true"] { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; font-size: var(--fs-sm); z-index: 70;
@@ -472,14 +496,21 @@ a.card:hover { border-color: var(--accent); }
   .toc { display: none; }
 }
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); transition: transform .2s ease; box-shadow: none; width: min(320px, 86vw); }
-  .sidebar[data-open="true"] { transform: none; box-shadow: var(--shadow); }
+  /* Drawer: enters in 280 ms, leaves faster in 200 ms; hidden from keyboard and screen readers while closed. */
+  .sidebar {
+    width: min(320px, 86vw); box-shadow: none; transform: translateX(-100%); visibility: hidden;
+    transition: transform 200ms var(--ease-drawer), visibility 0s linear 200ms;
+  }
+  .sidebar[data-open="true"] {
+    transform: none; visibility: visible; box-shadow: var(--shadow);
+    transition: transform 280ms var(--ease-drawer), visibility 0s;
+  }
   .main { margin-left: 0; }
   .main .mobile-only { display: grid; }
   .topbar, .topbar[data-empty="true"] { position: sticky; background: var(--bg); border-bottom: 1px solid var(--line); }
   .topbar-inner { min-height: 56px; }
   .mobile-brand { display: flex; flex: 1; min-width: 0; }
-  .tabs-row { border-top: 1px solid var(--line); margin-inline: calc(-1 * clamp(16px, 4vw, 64px)); padding-inline: clamp(16px, 4vw, 64px); }
+  .tabs-row { border-top: 1px solid var(--line); margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); }
   .content-wrap { padding-top: 32px; }
   html { scroll-padding-top: 136px; }
   .prose h2, .prose h3, .prose h4 { scroll-margin-top: 136px; }
@@ -493,10 +524,59 @@ a.card:hover { border-color: var(--accent); }
   .update-meta { position: static; }
 }
 @media (min-width: 901px) { .mobile-brand { display: none; } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+/* Hover only where a real pointer hovers: on touch screens a :hover state sticks after the tap. */
+@media (hover: hover) and (pointer: fine) {
+  .search-trigger:hover { border-color: var(--line-strong); }
+  .nav-link:hover, .nav-sub:hover { color: var(--ink); border-left-color: var(--line-strong); }
+  .tabs-nav a:hover, .toc a:hover, .chart-toggle:hover { color: var(--ink); }
+  .copy-btn:hover { border-color: var(--line-strong); color: var(--ink); }
+  .prose .heading-anchor:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 6px; }
+  .prose a:hover { text-decoration-thickness: 2.5px; }
+  a.card:hover { border-color: var(--accent); }
+  .pager a:hover { border-color: var(--line-strong); }
+  .term:hover::after {
+    content: attr(data-def); position: absolute; left: 0; top: calc(100% + 6px); z-index: 10;
+    width: max-content; max-width: min(300px, 80vw); white-space: normal;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+    padding: 8px 10px; font-size: var(--fs-sm); font-weight: 400; line-height: 1.5;
+  }
+}
+/* Pressed state for touch, where there is no hover. */
+.nav-link:active, .nav-sub:active, .toc a:active, .search-trigger:active, .copy-btn:active, .pager a:active, a.card:active { background-color: var(--sub); }
+/* 44 px touch targets in the drawer and on coarse pointers. */
+@media (max-width: 900px), (pointer: coarse) {
+  .nav-link, .nav-sub { min-height: 44px; }
+  .brand-row { flex-wrap: wrap; row-gap: 8px; }
+  .theme-toggle { gap: 8px; }
+  .theme-toggle button { width: 44px; height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+}
+/* Reduced motion: drop movement (slides, scale), keep fades. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .theme-toggle button:active, .icon-btn:active { transform: none; }
+  .nav-sub svg, .accordion summary svg, .page-sources summary svg, .card, .skip-link { transition: none; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 900px) {
+  .sidebar { transform: none; opacity: 0; transition: opacity 150ms ease, visibility 0s linear 150ms; }
+  .sidebar[data-open="true"] { opacity: 1; transition: opacity 200ms ease, visibility 0s; }
+}
 </style>
+<script>
+/* Theme before first paint, so a saved dark theme never flashes light. */
+(function () {
+  try {
+    var t = localStorage.getItem("wikime-theme");
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    var bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    var m = document.getElementById("meta-theme-color");
+    if (bg && m) m.setAttribute("content", bg);
+  } catch (e) {}
+})();
+</script>
 <!--__CUSTOM_HEAD__-->
 
+<a class="skip-link" href="#page-title" id="skip-link">Saltar al contenido</a>
 <aside class="sidebar" id="sidebar" aria-label="Navegación">
   <div class="brand-row">
     <a class="brand" href="#" id="brand-link"><span class="brand-name" id="brand-name"></span></a>
@@ -513,7 +593,7 @@ a.card:hover { border-color: var(--accent); }
   <nav class="nav" id="nav"></nav>
   <div class="sidebar-foot" id="sidebar-foot"></div>
 </aside>
-<div class="scrim" id="scrim" hidden></div>
+<div class="scrim" id="scrim"></div>
 
 <div class="main">
   <header class="topbar" id="topbar">
@@ -533,7 +613,7 @@ a.card:hover { border-color: var(--accent); }
     <article class="page" id="page">
       <p class="page-eyebrow" id="page-eyebrow"></p>
       <div class="page-head">
-        <h1 class="page-title" id="page-title"></h1>
+        <h1 class="page-title" id="page-title" tabindex="-1"></h1>
         <button type="button" class="copy-btn" id="copy-btn">
           <span class="i" data-icon="copy"></span>
           <span id="copy-label"></span>
@@ -583,10 +663,10 @@ a.card:hover { border-color: var(--accent); }
   var PAGES = WIKI.pages;
   var LANG = (WIKI.lang || "es").slice(0, 2);
   var T = {
-    es: { search: "Buscar…", toc: "En esta página", copy: "Copiar página", copied: "Página copiada como Markdown", copyFail: "No se pudo copiar. Selecciona el texto a mano.", prev: "Anterior", next: "Siguiente", sources: "Fuentes de esta página", updated: "Actualizado el", noResults: "Sin resultados para", hintNav: "↑↓ para moverte", hintGo: "↵ para abrir", nav: "Navegación", system: "Tema del sistema", light: "Tema claro", dark: "Tema oscuro", menu: "Abrir menú", searchBtn: "Buscar", showData: "Ver datos", hideData: "Ocultar datos", close: "Cerrar", tableSearch: "Buscar en la tabla", all: "todos", clear: "Limpiar", rows: "filas", of: "de" },
-    en: { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Page copied as Markdown", copyFail: "Couldn't copy. Select the text manually.", prev: "Previous", next: "Next", sources: "Sources for this page", updated: "Updated", noResults: "No results for", hintNav: "↑↓ to navigate", hintGo: "↵ to open", nav: "Navigation", system: "System theme", light: "Light theme", dark: "Dark theme", menu: "Open menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of" }
+    es: { search: "Buscar…", toc: "En esta página", copy: "Copiar página", copied: "Página copiada como Markdown", copyFail: "No se pudo copiar. Selecciona el texto a mano.", prev: "Anterior", next: "Siguiente", sources: "Fuentes de esta página", updated: "Actualizado el", noResults: "Sin resultados para", hintNav: "↑↓ para moverte", hintGo: "↵ para abrir", nav: "Navegación", system: "Tema del sistema", light: "Tema claro", dark: "Tema oscuro", menu: "Abrir menú", searchBtn: "Buscar", showData: "Ver datos", hideData: "Ocultar datos", close: "Cerrar", tableSearch: "Buscar en la tabla", all: "todos", clear: "Limpiar", rows: "filas", of: "de", skip: "Saltar al contenido" },
+    en: { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Page copied as Markdown", copyFail: "Couldn't copy. Select the text manually.", prev: "Previous", next: "Next", sources: "Sources for this page", updated: "Updated", noResults: "No results for", hintNav: "↑↓ to navigate", hintGo: "↵ to open", nav: "Navigation", system: "System theme", light: "Light theme", dark: "Dark theme", menu: "Open menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of", skip: "Skip to content" }
   }[LANG] || null;
-  if (!T) T = { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Copied", copyFail: "Couldn't copy.", prev: "Previous", next: "Next", sources: "Sources", updated: "Updated", noResults: "No results for", hintNav: "↑↓", hintGo: "↵", nav: "Navigation", system: "System", light: "Light", dark: "Dark", menu: "Menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of" };
+  if (!T) T = { search: "Search…", toc: "On this page", copy: "Copy page", copied: "Copied", copyFail: "Couldn't copy.", prev: "Previous", next: "Next", sources: "Sources", updated: "Updated", noResults: "No results for", hintNav: "↑↓", hintGo: "↵", nav: "Navigation", system: "System", light: "Light", dark: "Dark", menu: "Menu", searchBtn: "Search", showData: "Show data", hideData: "Hide data", close: "Close", tableSearch: "Search this table", all: "all", clear: "Clear", rows: "rows", of: "of", skip: "Skip to content" };
   // Report-level options (wiki.json "options") and project hooks (window.wikime, from custom.js).
   var OPT = WIKI.options || {};
   var HOOK = window.wikime || {};
@@ -1246,9 +1326,21 @@ a.card:hover { border-color: var(--accent); }
       closeMenu();
     }
     var target = anchor ? document.getElementById(anchor) : null;
-    if (target) target.scrollIntoView({ block: "start" });
+    if (target) scrollToEl(target, !changed);
     else if (changed) window.scrollTo(0, 0);
     spy();
+  }
+
+  /* Scroll to a section clear of the sticky header: its height + 16 px when it sticks
+     (phone, or tabs on desktop), 24 px otherwise. Works even when the page is a data: URL. */
+  function reduceMotion() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  function headerOffset() {
+    var tb = $("topbar"), cs = getComputedStyle(tb);
+    return cs.position === "sticky" && tb.offsetHeight ? tb.offsetHeight + 16 : 24;
+  }
+  function scrollToEl(el, smooth) {
+    var top = el.getBoundingClientRect().top + window.scrollY - headerOffset();
+    window.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduceMotion() ? "smooth" : "auto" });
   }
 
   /* ---------- Router ---------- */
@@ -1267,9 +1359,9 @@ a.card:hover { border-color: var(--accent); }
   function spy() {
     spyQueued = false;
     if (!headings.length) return;
-    var cur = headings[0].id;
+    var cur = headings[0].id, cut = Math.min(140, window.innerHeight * 0.3);
     for (var i = 0; i < headings.length; i++) {
-      if (headings[i].el.getBoundingClientRect().top < 120) cur = headings[i].id; else break;
+      if (headings[i].el.getBoundingClientRect().top < cut) cur = headings[i].id; else break;
     }
     if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = headings[headings.length - 1].id;
     Array.prototype.forEach.call(document.querySelectorAll("#toc-list a"), function (a) {
@@ -1346,6 +1438,11 @@ a.card:hover { border-color: var(--accent); }
     Array.prototype.forEach.call(document.querySelectorAll("#theme-toggle button"), function (b) {
       b.setAttribute("aria-pressed", String(b.getAttribute("data-theme-value") === (v || "system")));
     });
+    syncThemeColor();
+  }
+  function syncThemeColor() {
+    var m = $("meta-theme-color"), bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    if (m && bg) m.setAttribute("content", bg);
   }
   var savedTheme = null;
   try { savedTheme = localStorage.getItem("wikime-theme"); } catch (e) {}
@@ -1358,20 +1455,36 @@ a.card:hover { border-color: var(--accent); }
     if (!window.mermaid || !document.querySelector("#prose .diagram")) return;
     var y = window.scrollY, s = activeSlug; activeSlug = null; renderPage(s); window.scrollTo(0, y);
   }
-  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", refreshDiagrams); } catch (err) {}
+  try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { syncThemeColor(); refreshDiagrams(); }); } catch (err) {}
+  var themeAnimTimer;
   $("theme-toggle").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     var v = b.getAttribute("data-theme-value");
+    var root = document.documentElement;
+    root.classList.add("theme-anim");
+    clearTimeout(themeAnimTimer);
+    themeAnimTimer = setTimeout(function () { root.classList.remove("theme-anim"); }, 260);
     applyTheme(v);
     setTimeout(refreshDiagrams, 0);
     try { localStorage.setItem("wikime-theme", v); } catch (err) {}
   });
 
   // Mobile menu
-  function openMenu() { $("sidebar").setAttribute("data-open", "true"); $("scrim").hidden = false; $("menu-btn").setAttribute("aria-expanded", "true"); }
-  function closeMenu() { $("sidebar").removeAttribute("data-open"); $("scrim").hidden = true; $("menu-btn").setAttribute("aria-expanded", "false"); }
+  function menuOpen() { return $("sidebar").getAttribute("data-open") === "true"; }
+  function openMenu() {
+    $("sidebar").setAttribute("data-open", "true"); $("scrim").setAttribute("data-open", "true");
+    $("menu-btn").setAttribute("aria-expanded", "true");
+    var first = $("sidebar").querySelector('.nav-link[aria-current="page"]') || $("sidebar").querySelector(".nav-link");
+    if (first) first.focus({ preventScroll: true });
+  }
+  function closeMenu(returnFocus) {
+    var was = menuOpen();
+    $("sidebar").removeAttribute("data-open"); $("scrim").removeAttribute("data-open");
+    $("menu-btn").setAttribute("aria-expanded", "false");
+    if (was && returnFocus === true) $("menu-btn").focus({ preventScroll: true });
+  }
   $("menu-btn").addEventListener("click", openMenu);
-  $("scrim").addEventListener("click", closeMenu);
+  $("scrim").addEventListener("click", function () { closeMenu(true); });
 
   /* ---------- Search ---------- */
   function plain(s) {
@@ -1492,7 +1605,7 @@ a.card:hover { border-color: var(--accent); }
   document.addEventListener("keydown", function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("search-overlay").hidden ? openSearch() : closeSearch(); }
     else if (e.key === "/" && $("search-overlay").hidden && !/input|textarea/i.test((document.activeElement || {}).tagName || "")) { e.preventDefault(); openSearch(); }
-    else if (e.key === "Escape") { closeLightbox(); closeSearch(); closeMenu(); }
+    else if (e.key === "Escape") { closeLightbox(); closeSearch(); closeMenu(true); }
   });
 
   /* ---------- Boot ---------- */
@@ -1509,6 +1622,12 @@ a.card:hover { border-color: var(--accent); }
   $("theme-light").setAttribute("aria-label", T.light); $("theme-light").title = T.light;
   $("theme-dark").setAttribute("aria-label", T.dark); $("theme-dark").title = T.dark;
   $("menu-btn").setAttribute("aria-label", T.menu);
+  $("skip-link").textContent = T.skip;
+  $("skip-link").addEventListener("click", function (e) {
+    e.preventDefault();
+    scrollToEl($("page-title"), false);
+    $("page-title").focus({ preventScroll: true });
+  });
   $("lightbox-close").setAttribute("aria-label", T.close);
   $("search-btn-mobile").setAttribute("aria-label", T.searchBtn);
   $("brand-name").textContent = WIKI.name || "";

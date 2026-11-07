@@ -266,6 +266,16 @@ class ImageInliner:
         return body
 
 
+def favicon(name, accent):
+    """Browser-tab icon: the project's initial on the accent colour, as an SVG data URI."""
+    letter = html.escape((name.strip()[:1] or "W").upper())
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+           f'<rect width="32" height="32" rx="8" fill="{html.escape(accent)}"/>'
+           '<text x="16" y="22" text-anchor="middle" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" '
+           f'font-size="18" font-weight="600" fill="#ffffff">{letter}</text></svg>')
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
 def build_icons(names, warnings):
     """Lucide icon names -> inline SVG strings, only for the icons this wiki uses."""
     nodes = json.loads(LUCIDE.read_text(encoding="utf-8"))
@@ -532,6 +542,13 @@ def main():
         masked = mask_code(body)
         if re.search(r"^#\s", masked, re.M):
             warnings.append(f"{slug}: usa '# ' en el cuerpo; el título ya es el H1, empieza en '##'")
+        prev_level = 1
+        for hm in re.finditer(r"^(#{2,6})\s+(.+)$", masked, re.M):
+            level = len(hm.group(1))
+            if level > prev_level + 1:
+                warnings.append(f"{slug}: el título '{hm.group(2).strip()[:40]}' salta de h{prev_level} a h{level}; usa niveles seguidos")
+                break
+            prev_level = level
         if re.search(r"\b(TODO|TBD|FIXME|XXX)\b|lorem ipsum|<\.\.\.>", masked):
             warnings.append(f"{slug}: quedan marcadores sin completar (TODO/TBD/<...>)")
         words = len(re.findall(r"\w+", re.sub(r"<[^>]+>", " ", masked)))
@@ -672,7 +689,8 @@ def main():
         custom_head += "<script>\n/* custom.js del informe */\n" + custom_files["js"].replace("</script", "<\\/script") + "\n</script>\n"
     tpl = tpl.replace("<!--__CUSTOM_HEAD__-->", custom_head)
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
-    out_html = (tpl.replace("__WIKI_TITLE__", html.escape(cfg.get("name", "Wiki")))
+    out_html = (tpl.replace("__FAVICON__", favicon(cfg.get("name", "W"), (cfg.get("theme") or {}).get("accent") or "#5b7a1f"))
+                   .replace("__WIKI_TITLE__", html.escape(cfg.get("name", "Wiki")))
                    .replace("__WIKI_DESCRIPTION__", html.escape(cfg.get("description", ""), quote=True))
                    .replace("/*__THEME_CSS__*/", theme_css)
                    .replace("/*__WIKI_DATA__*/", payload))

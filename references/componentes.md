@@ -183,7 +183,7 @@ indentar (el build quita la indentación común). Cada etiqueta de bloque se abr
 
 `title` es opcional en todos.
 
-### Pasos (solo para secuencias reales)
+### Pasos (secuencias reales, o temas numerados si el usuario lo pide)
 
 ```mdx
 <Steps>

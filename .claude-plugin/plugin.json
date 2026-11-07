@@ -1,6 +1,6 @@
 {
   "name": "wikime",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Convierte las notas de un proyecto (Obsidian, brainify o cualquier carpeta .md) en un informe HTML navegable estilo help center (Granola/Mintlify): propone la estructura según el tipo de informe, escribe páginas que responden las preguntas del lector y genera un solo archivo con búsqueda, gráficos, diagramas, glosario y versiones por audiencia.",
   "author": {
     "name": "Jonathan Latorre",
